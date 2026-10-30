@@ -123,6 +123,25 @@ nav button[aria-selected="true"]{color:var(--accent)}
 .sheet details summary{cursor:pointer;color:var(--muted);font-size:14px}
 .sheet details{display:flex;flex-direction:column;gap:8px}
 .sheet details[open]>*:not(summary){margin-top:8px}
+.aiswap summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
+.aiswap[open]{display:flex;flex-direction:column;gap:10px}
+/* manual face editor */
+.fx{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column}
+.fx-top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.fx-top .ghost{padding:8px 12px}
+.fx-status{flex:1;min-width:0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-save{width:auto;padding:9px 18px;font-size:15px}
+.fx-stage{flex:1;position:relative;min-height:0;background:repeating-conic-gradient(var(--surface) 0 25%,var(--bg) 0 50%) 0 0/20px 20px;touch-action:none}
+.fx-stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.fx-panel{border-top:1px solid var(--line);background:var(--surface);padding:8px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;max-height:44vh;overflow-y:auto}
+.fx-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg);border-radius:12px;padding:4px}
+.fx-tabs button{background:none;border:0;border-radius:9px;padding:8px 0;font-size:14px;color:var(--muted);cursor:pointer}
+.fx-tabs button[aria-selected="true"]{background:var(--surface2);color:var(--accent);font-weight:600}
+.fx-pane{display:flex;flex-direction:column;gap:10px}
+.rng{display:grid;grid-template-columns:88px 1fr 36px;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.rng input{width:100%;accent-color:var(--accent)}
+.rng output{font-variant-numeric:tabular-nums;text-align:center;color:var(--fg);font-size:12px}
+.fx-pane .row .ghost,.fx-pane .row .chip{flex:1;text-align:center}
 </style>
 </head>
 <body>
@@ -155,14 +174,17 @@ nav button[aria-selected="true"]{color:var(--accent)}
   <!-- FACE SWAP -->
   <section class="view" id="v-face" hidden>
     <h2>تبديل الوجه</h2>
-    <p class="sub">الوجه من الصورة الأولى ينتقل إلى الشخص في الصورة الثانية.</p>
+    <p class="sub">مجاني وبلا حدود: يقص الوجه، يضعه مكان الوجه الآخر، ويطابق البشرة والجودة. وأنت تعدّل كل شيء بيدك.</p>
     <div class="slots">
       <div class="slot" data-slot="faceSrc"><span class="tag">١ الوجه</span><div class="ph"><b>صورة الوجه</b>اضغط للاختيار</div></div>
       <div class="slot" data-slot="faceDst"><span class="tag">٢ الهدف</span><div class="ph"><b>الصورة الهدف</b>اضغط للاختيار</div></div>
     </div>
-    <label class="toggle"><input type="checkbox" id="faceHair"> انقل الشعر أيضاً</label>
-    <p class="note" style="margin:0">لون بشرة الوجه وجودة الصورة يُطابَقان تلقائياً مع جسم الشخص في الصورة الهدف.</p>
-    <button class="go" id="faceGo">تحويل</button>
+    <button class="go" id="fxOpen">افتح المحرّر</button>
+    <details class="aiswap">
+      <summary>تبديل بالذكاء الاصطناعي (يحتاج رصيداً عند المزوّد)</summary>
+      <label class="toggle"><input type="checkbox" id="faceHair"> انقل الشعر أيضاً</label>
+      <button class="ghost" id="faceGo">تحويل بالذكاء الاصطناعي</button>
+    </details>
     <div id="faceOut"></div>
   </section>
 
@@ -242,6 +264,50 @@ nav button[aria-selected="true"]{color:var(--accent)}
   <button role="tab" aria-selected="false" data-v="enh"><svg viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>تحسين</button>
   <button role="tab" aria-selected="false" data-v="exp"><svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>توسعة</button>
 </nav>
+
+<div class="fx" id="fx" hidden>
+  <div class="fx-top">
+    <button class="ghost" id="fxCancel">إغلاق</button>
+    <span class="fx-status" id="fxStatus"></span>
+    <button class="icon-btn" id="fxPeek" aria-label="اضغط مطولاً لرؤية الأصل"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button class="go fx-save" id="fxSave">حفظ</button>
+  </div>
+  <div class="fx-stage" id="fxStage"><canvas id="fxCanvas"></canvas></div>
+  <div class="fx-panel">
+    <div class="fx-tabs" role="tablist">
+      <button role="tab" data-m="move" aria-selected="true">تحريك</button>
+      <button role="tab" data-m="cut" aria-selected="false">قص</button>
+      <button role="tab" data-m="skin" aria-selected="false">البشرة</button>
+      <button role="tab" data-m="quality" aria-selected="false">الجودة</button>
+    </div>
+    <div class="fx-pane" data-p="move">
+      <div class="row"><button class="ghost" id="fxAlign">محاذاة تلقائية</button><button class="ghost" id="fxFlip">قلب</button><button class="ghost" id="fxCenter">توسيط</button></div>
+      <label class="rng">الحجم<input type="range" id="fxScale" min="3" max="150" value="35"><output id="fxScaleO"></output></label>
+      <label class="rng">الدوران<input type="range" id="fxRot" min="-180" max="180" value="0"><output id="fxRotO"></output></label>
+      <p class="note" style="margin:0">إصبع واحد للتحريك، إصبعان للتكبير والتدوير.</p>
+    </div>
+    <div class="fx-pane" data-p="cut" hidden>
+      <div class="row"><button class="chip" id="fxErase" aria-pressed="true">ممحاة</button><button class="chip" id="fxRestore" aria-pressed="false">استعادة</button><button class="ghost" id="fxUndo">تراجع</button></div>
+      <div class="row"><button class="ghost" id="fxAutoCut">قص تلقائي للوجه</button><button class="ghost" id="fxOval">شكل بيضاوي</button></div>
+      <label class="rng">حجم الفرشاة<input type="range" id="fxBrush" min="8" max="160" value="44"><output id="fxBrushO"></output></label>
+      <label class="rng">نعومة الفرشاة<input type="range" id="fxSoft" min="0" max="100" value="60"><output id="fxSoftO"></output></label>
+      <label class="rng">نعومة الحواف<input type="range" id="fxFeather" min="0" max="40" value="8"><output id="fxFeatherO"></output></label>
+    </div>
+    <div class="fx-pane" data-p="skin" hidden>
+      <label class="toggle"><input type="checkbox" id="fxSkinAuto" checked> مطابقة لون البشرة تلقائياً</label>
+      <label class="rng">قوة المطابقة<input type="range" id="fxSkinK" min="0" max="100" value="85"><output id="fxSkinKO"></output></label>
+      <label class="rng">الإضاءة<input type="range" id="fxBri" min="-50" max="50" value="0"><output id="fxBriO"></output></label>
+      <label class="rng">التباين<input type="range" id="fxCon" min="-50" max="50" value="0"><output id="fxConO"></output></label>
+      <label class="rng">التشبّع<input type="range" id="fxSat" min="-50" max="50" value="0"><output id="fxSatO"></output></label>
+      <label class="rng">الدفء<input type="range" id="fxWarm" min="-50" max="50" value="0"><output id="fxWarmO"></output></label>
+    </div>
+    <div class="fx-pane" data-p="quality" hidden>
+      <button class="ghost" id="fxAutoQ">مطابقة الجودة تلقائياً</button>
+      <label class="rng">الضبابية<input type="range" id="fxBlur" min="0" max="60" value="0"><output id="fxBlurO"></output></label>
+      <label class="rng">الحبيبات<input type="range" id="fxGrain" min="0" max="40" value="0"><output id="fxGrainO"></output></label>
+    </div>
+  </div>
+</div>
 
 <input type="file" id="picker" accept="image/*" hidden>
 <input type="file" id="pickerMulti" accept="image/*" multiple hidden>
@@ -722,6 +788,304 @@ if(!SR){$('#chatMic').hidden=true;}else{
   };
 }
 addMsg('bot','مرحباً! أرفق صورة أو أكثر (تُسمّى img1، img2…)، ثم اكتب أو قل هدفك كاملاً. أضع خطة وأنفّذها خطوة بخطوة، وإذا فشل مزوّد أجرّب غيره.');
+
+/* =====================================================
+   MANUAL FACE EDITOR — runs fully on the phone, no provider
+   ===================================================== */
+const FX={src:null,tgt:null,layer:null,mask:null,proc:null,comp:null,maskA:null,crop:null,srcLm:null,tgtLm:null,
+  t:{x:0,y:0,s:1,r:0,flip:1},adj:{skin:true,skinK:.85,bri:0,con:0,sat:0,warm:0,blur:0,grain:0,feather:8},
+  mode:'move',brush:{size:44,soft:.6,erase:true},undo:[],stats:null,hide:false,key:'',V:1,ox:0,oy:0,dpr:1};
+const OVAL=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+const FILTER_OK=typeof CanvasRenderingContext2D!=='undefined'&&'filter' in CanvasRenderingContext2D.prototype;
+const cv=(w,h)=>{const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c;};
+const loadCanvas=url=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const c=cv(i.naturalWidth,i.naturalHeight);c.getContext('2d').drawImage(i,0,0);res(c);};i.onerror=rej;i.src=url;});
+const fxStatus=t=>$('#fxStatus').textContent=t||'';
+
+/* face landmarks (MediaPipe, on-device) */
+let lmP=null;
+function getLandmarker(){
+  if(!lmP){lmP=(async()=>{
+    const V='0.10.14';
+    const v=await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}/vision_bundle.mjs`);
+    const fs=await v.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}/wasm`);
+    return v.FaceLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},runningMode:'IMAGE',numFaces:1});
+  })();lmP.catch(()=>{lmP=null;});}
+  return lmP;
+}
+async function detect(c){
+  try{const lm=await Promise.race([getLandmarker(),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),25000))]);
+    const r=lm.detect(c);const p=r.faceLandmarks&&r.faceLandmarks[0];return p?p.map(q=>({x:q.x*c.width,y:q.y*c.height})):null;}
+  catch(e){return null;}
+}
+const eyes=lm=>{const m=(a,b)=>({x:(lm[a].x+lm[b].x)/2,y:(lm[a].y+lm[b].y)/2});return {l:m(33,133),r:m(362,263)};};
+
+/* layer geometry */
+function layerMatrix(scale=1){const t=FX.t;return new DOMMatrix().scale(scale,scale).translate(t.x,t.y).rotate(t.r*180/Math.PI).scale(t.s*t.flip,t.s).translate(-FX.layer.width/2,-FX.layer.height/2);}
+function buildLayer(rect,poly){
+  const f=Math.min(1,900/Math.max(rect.w,rect.h));
+  const L=cv(rect.w*f,rect.h*f);L.getContext('2d').drawImage(FX.src,rect.x,rect.y,rect.w,rect.h,0,0,L.width,L.height);
+  const M=cv(L.width,L.height);const g=M.getContext('2d');g.fillStyle='#fff';
+  if(poly){
+    const cx=poly.reduce((a,p)=>a+p.x,0)/poly.length,cy=poly.reduce((a,p)=>a+p.y,0)/poly.length;
+    g.beginPath();poly.forEach((p,i)=>{const x=((p.x-cx)*.97+cx-rect.x)*f,y=((p.y-cy)*.97+cy-rect.y)*f;i?g.lineTo(x,y):g.moveTo(x,y);});g.closePath();g.fill();
+  }else{g.beginPath();g.ellipse(L.width/2,L.height/2,L.width*.42,L.height*.46,0,0,Math.PI*2);g.fill();}
+  const keepT=FX.layer?{...FX.t,ow:FX.layer.width*FX.t.s}:null;
+  FX.layer=L;FX.mask=M;FX.crop={x:rect.x,y:rect.y,f};FX.undo=[];
+  if(keepT){FX.t.s=keepT.ow/L.width;}
+}
+function defaultPlace(){const T=FX.tgt,L=FX.layer;FX.t={x:T.width/2,y:T.height*.4,s:T.width*.35/L.width,r:0,flip:1};}
+function autoCutRect(){
+  const pts=OVAL.map(i=>FX.srcLm[i]);const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const w=x1-x0,h=y1-y0;
+  x0=Math.max(0,x0-w*.15);y0=Math.max(0,y0-h*.15);x1=Math.min(FX.src.width,x1+w*.15);y1=Math.min(FX.src.height,y1+h*.15);
+  return {rect:{x:x0,y:y0,w:x1-x0,h:y1-y0},poly:pts};
+}
+function align(){
+  if(!FX.srcLm||!FX.tgtLm)return false;
+  const s=eyes(FX.srcLm),t=eyes(FX.tgtLm),c=FX.crop,L=FX.layer;
+  const toL=p=>({x:(p.x-c.x)*c.f,y:(p.y-c.y)*c.f});const sl=toL(s.l),sr=toL(s.r);
+  const flip=FX.t.flip;if(flip<0){[sl.x,sr.x]=[L.width-sl.x,L.width-sr.x];}
+  const ds=Math.hypot(sr.x-sl.x,sr.y-sl.y),dt=Math.hypot(t.r.x-t.l.x,t.r.y-t.l.y);
+  const S=dt/ds,R=Math.atan2(t.r.y-t.l.y,t.r.x-t.l.x)-Math.atan2(sr.y-sl.y,sr.x-sl.x);
+  const ms={x:(sl.x+sr.x)/2-L.width/2,y:(sl.y+sr.y)/2-L.height/2},mt={x:(t.l.x+t.r.x)/2,y:(t.l.y+t.r.y)/2};
+  const cr=Math.cos(R),sn=Math.sin(R);
+  FX.t={x:mt.x-S*(ms.x*cr-ms.y*sn),y:mt.y-S*(ms.x*sn+ms.y*cr),s:S,r:R,flip:1};
+  if(flip<0){FX.t.flip=-1;}
+  return true;
+}
+
+/* color: sRGB <-> Lab */
+const LIN=new Float32Array(256);for(let i=0;i<256;i++){const c=i/255;LIN[i]=c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);}
+const fLab=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;
+function toLab(r,g,b,o){const R=LIN[r],G=LIN[g],B=LIN[b];
+  const x=fLab((R*.4124+G*.3576+B*.1805)/.95047),y=fLab(R*.2126+G*.7152+B*.0722),z=fLab((R*.0193+G*.1192+B*.9505)/1.08883);
+  o[0]=116*y-16;o[1]=500*(x-y);o[2]=200*(y-z);}
+const gam=c=>{c=c<=.0031308?12.92*c:1.055*Math.pow(c,1/2.4)-.055;return c*255;};
+const fInv=t=>{const t3=t*t*t;return t3>.008856?t3:(t-16/116)/7.787;};
+function fromLab(L,a,b,o){const y=(L+16)/116,x=a/500+y,z=y-b/200;const X=fInv(x)*.95047,Y=fInv(y),Z=fInv(z)*1.08883;
+  o[0]=gam(X*3.2406+Y*-1.5372+Z*-.4986);o[1]=gam(X*-.9689+Y*1.8758+Z*.0415);o[2]=gam(X*.0557+Y*-.204+Z*1.057);}
+function labStats(px,mk,step=2,box){
+  const s=[0,0,0],q=[0,0,0],o=[0,0,0];let n=0;
+  for(let i=0;i<px.length;i+=4*step){if(mk[i]<200||px[i+3]<255)continue;
+    if(box){const p=i/4,x=p%box.w,y=(p/box.w)|0;if(x<box.x0||x>box.x1||y<box.y0||y>box.y1)continue;}toLab(px[i],px[i+1],px[i+2],o);for(let k=0;k<3;k++){s[k]+=o[k];q[k]+=o[k]*o[k];}n++;}
+  if(n<300)return null;const m=s.map(v=>v/n);return {m,sd:q.map((v,k)=>Math.sqrt(Math.max(1e-4,v/n-m[k]*m[k])))};
+}
+function targetUnderLayer(){const L=FX.layer,c=cv(L.width,L.height),g=c.getContext('2d');g.setTransform(layerMatrix().inverse());g.drawImage(FX.tgt,0,0);return c;}
+function computeStats(){
+  const L=FX.layer,w=L.width,h=L.height,mk=FX.mask.getContext('2d').getImageData(0,0,w,h).data;
+  // sample only the central part of the cut (cheeks, nose, forehead) so hair and background don't skew the tone
+  let x0=w,x1=0,y0=h,y1=0;for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2)if(mk[(y*w+x)*4]>200){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+  const bw=x1-x0,bh=y1-y0,box=bw>10&&bh>10?{w,x0:x0+bw*.22,x1:x1-bw*.22,y0:y0+bh*.2,y1:y1-bh*.2}:null;
+  const a=labStats(L.getContext('2d').getImageData(0,0,w,h).data,mk,2,box);
+  const b=labStats(targetUnderLayer().getContext('2d').getImageData(0,0,w,h).data,mk,2,box);
+  FX.stats=a&&b?{s:a,t:b}:null;
+}
+function recolor(){
+  const L=FX.layer,A=FX.adj,P=FX.proc&&FX.proc.width===L.width&&FX.proc.height===L.height?FX.proc:cv(L.width,L.height);FX.proc=P;
+  const id=L.getContext('2d').getImageData(0,0,L.width,L.height),d=id.data;
+  const st=A.skin&&FX.stats,k=A.skinK,o=[0,0,0],rgb=[0,0,0];let ratio=[1,1,1];
+  if(st)ratio=[0,1,2].map(i=>Math.min(2,Math.max(.5,st.t.sd[i]/st.s.sd[i])));
+  const bri=A.bri*2.2,con=1+A.con/100,sat=1+A.sat/100,warm=A.warm*.6,gr=A.grain;
+  const simple=!st&&!bri&&con===1&&sat===1&&!warm&&!gr;
+  if(!simple)for(let i=0;i<d.length;i+=4){
+    let r=d[i],g=d[i+1],b=d[i+2];
+    if(st){toLab(r,g,b,o);for(let c=0;c<3;c++){const v=(o[c]-st.s.m[c])*ratio[c]+st.t.m[c];o[c]=o[c]+(v-o[c])*k;}fromLab(o[0],o[1],o[2],rgb);r=rgb[0];g=rgb[1];b=rgb[2];}
+    r=(r-128)*con+128+bri+warm;g=(g-128)*con+128+bri;b=(b-128)*con+128+bri-warm;
+    if(sat!==1){const y=.299*r+.587*g+.114*b;r=y+(r-y)*sat;g=y+(g-y)*sat;b=y+(b-y)*sat;}
+    if(gr){const n=(Math.random()-.5)*gr*2;r+=n;g+=n;b+=n;}
+    d[i]=r;d[i+1]=g;d[i+2]=b;
+  }
+  P.getContext('2d').putImageData(id,0,0);
+}
+function buildComp(blurOverride,featherOff){
+  const L=FX.layer,A=FX.adj;
+  if(!FX.maskA||FX.maskA.width!==L.width||FX.maskA.height!==L.height){FX.maskA=cv(L.width,L.height);FX.comp=cv(L.width,L.height);}
+  const ma=FX.maskA.getContext('2d');ma.clearRect(0,0,L.width,L.height);
+  if(FILTER_OK&&A.feather&&!featherOff)ma.filter=`blur(${A.feather}px)`;ma.drawImage(FX.mask,0,0);ma.filter='none';
+  const cg=FX.comp.getContext('2d');cg.globalCompositeOperation='source-over';cg.clearRect(0,0,L.width,L.height);
+  const bl=(blurOverride??A.blur)/FX.t.s;
+  if(FILTER_OK&&bl>.05)cg.filter=`blur(${bl}px)`;cg.drawImage(FX.proc,0,0);cg.filter='none';
+  cg.globalCompositeOperation='destination-in';cg.drawImage(FX.maskA,0,0);cg.globalCompositeOperation='source-over';
+}
+
+/* view */
+const fxCanvas=$('#fxCanvas');
+function fitView(){
+  const st=$('#fxStage').getBoundingClientRect();FX.dpr=Math.min(2,window.devicePixelRatio||1);
+  fxCanvas.width=Math.max(1,st.width*FX.dpr);fxCanvas.height=Math.max(1,st.height*FX.dpr);
+  const pad=12*FX.dpr,T=FX.tgt;FX.V=Math.min((fxCanvas.width-pad*2)/T.width,(fxCanvas.height-pad*2)/T.height);
+  FX.ox=(fxCanvas.width-T.width*FX.V)/2;FX.oy=(fxCanvas.height-T.height*FX.V)/2;
+}
+function render(){
+  if(!FX.tgt||!FX.comp)return;const g=fxCanvas.getContext('2d');
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,fxCanvas.width,fxCanvas.height);
+  g.setTransform(FX.V,0,0,FX.V,FX.ox,FX.oy);g.drawImage(FX.tgt,0,0);
+  if(!FX.hide){
+    g.setTransform(new DOMMatrix([FX.V,0,0,FX.V,FX.ox,FX.oy]).multiply(layerMatrix()));
+    if(FX.mode==='cut'){g.globalAlpha=.22;g.drawImage(FX.proc,0,0);g.globalAlpha=1;}
+    g.drawImage(FX.comp,0,0);
+  }
+  g.setTransform(1,0,0,1,0,0);
+}
+let raf=0,need={};
+function schedule(f){Object.assign(need,f);if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const n=need;need={};
+  if(n.stats&&FX.adj.skin)computeStats();
+  if(n.color||n.stats)recolor();
+  if(n.color||n.stats||n.comp)buildComp(undefined,n.fast);
+  render();syncSliders();});}
+function syncSliders(){
+  const sv=Math.round(FX.t.s*FX.layer.width/FX.tgt.width*100);$('#fxScale').value=sv;$('#fxScaleO').textContent=sv;
+  const rv=Math.round(FX.t.r*180/Math.PI);$('#fxRot').value=((rv+540)%360)-180;$('#fxRotO').textContent=$('#fxRot').value+'°';
+}
+
+/* open / setup */
+async function openEditor(){
+  const out=$('#faceOut');
+  if(!imgs.faceSrc||!imgs.faceDst)return renderError(out,new Error('اختر الصورتين أولاً.'));
+  out.innerHTML='';$('#fx').hidden=false;
+  const key=imgs.faceSrc.dataUrl.length+':'+imgs.faceDst.dataUrl.length+':'+imgs.faceSrc.dataUrl.slice(-40)+imgs.faceDst.dataUrl.slice(-40);
+  if(FX.key===key&&FX.comp){requestAnimationFrame(()=>{fitView();render();});return;}
+  FX.key=key;FX.src=await loadCanvas(imgs.faceSrc.dataUrl);FX.tgt=await loadCanvas(imgs.faceDst.dataUrl);
+  FX.srcLm=FX.tgtLm=null;FX.stats=null;FX.layer=null;FX.t.flip=1;
+  const S=FX.src;buildLayer({x:S.width*.2,y:S.height*.1,w:S.width*.6,h:S.height*.6},null);defaultPlace();
+  fitView();recolor();buildComp();render();syncSliders();
+  fxStatus('يكتشف الوجهين…');
+  const [a,b]=await Promise.all([detect(FX.src),detect(FX.tgt)]);
+  if(FX.key!==key)return;
+  FX.srcLm=a;FX.tgtLm=b;
+  if(a){const {rect,poly}=autoCutRect();FX.layer=null;buildLayer(rect,poly);defaultPlace();}
+  const aligned=align();
+  if(!a&&!b)fxStatus('لم يُكتشف الوجه تلقائياً، استعمل التحريك والقص يدوياً');
+  else if(!a)fxStatus('لم يُكتشف وجه في الصورة الأولى، قص يدوياً');
+  else if(!b)fxStatus('لم يُكتشف وجه في الصورة الهدف، حرّكه يدوياً');
+  else fxStatus('جاهز. عدّل ما تريد ثم احفظ');
+  computeStats();recolor();buildComp();render();syncSliders();
+  if(aligned)setTimeout(autoQuality,50);
+}
+$('#fxOpen').onclick=openEditor;
+$('#fxCancel').onclick=()=>{$('#fx').hidden=true;};
+addEventListener('resize',()=>{if(!$('#fx').hidden&&FX.tgt){fitView();render();}});
+
+/* panel tabs + controls */
+$$('.fx-tabs button').forEach(b=>b.onclick=()=>{FX.mode=b.dataset.m;$$('.fx-tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $$('.fx-pane').forEach(p=>p.hidden=p.dataset.p!==b.dataset.m);render();});
+function rng(id,fmt,fn){const el=$('#'+id),o=$('#'+id+'O');const upd=()=>{if(o)o.textContent=fmt?fmt(+el.value):el.value;};upd();el.addEventListener('input',()=>{upd();fn(+el.value);});}
+rng('fxScale',null,v=>{FX.t.s=v/100*FX.tgt.width/FX.layer.width;schedule({comp:FX.adj.blur>0});});
+$('#fxScale').addEventListener('change',()=>schedule({stats:true}));
+rng('fxRot',v=>v+'°',v=>{FX.t.r=v*Math.PI/180;schedule({});});
+$('#fxRot').addEventListener('change',()=>schedule({stats:true}));
+rng('fxBrush',null,v=>FX.brush.size=v);
+rng('fxSoft',null,v=>FX.brush.soft=v/100);
+rng('fxFeather',null,v=>{FX.adj.feather=v;schedule({comp:true});});
+rng('fxSkinK',null,v=>{FX.adj.skinK=v/100;schedule({color:true});});
+['Bri','Con','Sat','Warm'].forEach(k=>rng('fx'+k,null,v=>{FX.adj[k.toLowerCase()]=v;schedule({color:true});}));
+rng('fxBlur',v=>(v/10).toFixed(1),v=>{FX.adj.blur=v/10;schedule({comp:true});});
+rng('fxGrain',null,v=>{FX.adj.grain=v;schedule({color:true});});
+$('#fxSkinAuto').onchange=e=>{FX.adj.skin=e.target.checked;schedule({stats:true,color:true});};
+const setBrush=erase=>{FX.brush.erase=erase;$('#fxErase').setAttribute('aria-pressed',erase);$('#fxRestore').setAttribute('aria-pressed',!erase);};
+$('#fxErase').onclick=()=>setBrush(true);$('#fxRestore').onclick=()=>setBrush(false);
+$('#fxUndo').onclick=()=>{const u=FX.undo.pop();if(u){FX.mask.getContext('2d').putImageData(u,0,0);schedule({stats:true});}};
+$('#fxFlip').onclick=()=>{FX.t.flip*=-1;schedule({stats:true});};
+$('#fxCenter').onclick=()=>{FX.t.x=FX.tgt.width/2;FX.t.y=FX.tgt.height/2;schedule({stats:true});};
+$('#fxAlign').onclick=()=>{if(align())schedule({stats:true});else fxStatus('المحاذاة تحتاج اكتشاف الوجه في الصورتين');};
+$('#fxOval').onclick=()=>{FX.undo.push(FX.mask.getContext('2d').getImageData(0,0,FX.mask.width,FX.mask.height));
+  const g=FX.mask.getContext('2d'),w=FX.mask.width,h=FX.mask.height;g.clearRect(0,0,w,h);g.fillStyle='#fff';g.beginPath();g.ellipse(w/2,h/2,w*.42,h*.46,0,0,Math.PI*2);g.fill();schedule({stats:true});};
+$('#fxAutoCut').onclick=async()=>{
+  if(!FX.srcLm){fxStatus('يكتشف الوجه…');FX.srcLm=await detect(FX.src);}
+  if(!FX.srcLm){fxStatus('تعذّر اكتشاف الوجه. استعمل الممحاة يدوياً');return;}
+  const old={...FX.t},ow=FX.layer.width*FX.t.s;const {rect,poly}=autoCutRect();buildLayer(rect,poly);
+  if(!align()){FX.t={...old,s:ow/FX.layer.width};}
+  fxStatus('تم قص الوجه');schedule({stats:true});
+};
+const peek=$('#fxPeek');
+peek.addEventListener('pointerdown',()=>{FX.hide=true;render();});
+['pointerup','pointerleave','pointercancel'].forEach(e=>peek.addEventListener(e,()=>{if(FX.hide){FX.hide=false;render();}}));
+
+/* gestures + brush */
+const ptrs=new Map();let gest=null;
+function toTarget(e){const r=fxCanvas.getBoundingClientRect();return {x:((e.clientX-r.left)*FX.dpr-FX.ox)/FX.V,y:((e.clientY-r.top)*FX.dpr-FX.oy)/FX.V};}
+function stamp(p){
+  const q=layerMatrix().inverse().transformPoint(new DOMPoint(p.x,p.y));
+  const rad=FX.brush.size*FX.dpr/(FX.V*FX.t.s)/2,g=FX.mask.getContext('2d');
+  const grd=g.createRadialGradient(q.x,q.y,rad*(1-FX.brush.soft)*.98,q.x,q.y,rad);
+  const col=FX.brush.erase?'0,0,0':'255,255,255';grd.addColorStop(0,`rgba(${col},1)`);grd.addColorStop(1,`rgba(${col},0)`);
+  g.globalCompositeOperation=FX.brush.erase?'destination-out':'source-over';g.fillStyle=grd;g.beginPath();g.arc(q.x,q.y,rad,0,Math.PI*2);g.fill();g.globalCompositeOperation='source-over';
+}
+fxCanvas.addEventListener('pointerdown',e=>{
+  fxCanvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,toTarget(e));
+  if(ptrs.size===1){
+    const p=toTarget(e);
+    if(FX.mode==='cut'){FX.undo.push(FX.mask.getContext('2d').getImageData(0,0,FX.mask.width,FX.mask.height));if(FX.undo.length>15)FX.undo.shift();gest={type:'paint',last:p};stamp(p);schedule({comp:true,fast:true});}
+    else gest={type:'drag',p0:p,t0:{...FX.t}};
+  }else if(ptrs.size===2){
+    const [a,b]=[...ptrs.values()];
+    gest={type:'pinch',d0:Math.hypot(b.x-a.x,b.y-a.y),a0:Math.atan2(b.y-a.y,b.x-a.x),m0:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},t0:{...FX.t},moved:true};
+  }
+});
+fxCanvas.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)||!gest)return;const p=toTarget(e);ptrs.set(e.pointerId,p);
+  if(gest.type==='paint'&&ptrs.size===1){
+    const l=gest.last,d=Math.hypot(p.x-l.x,p.y-l.y),step=Math.max(1,FX.brush.size*FX.dpr/FX.V/5);
+    for(let s=step;s<=d;s+=step)stamp({x:l.x+(p.x-l.x)*s/d,y:l.y+(p.y-l.y)*s/d});
+    if(d>=step)gest.last=p;schedule({comp:true,fast:true});
+  }else if(gest.type==='drag'){FX.t.x=gest.t0.x+p.x-gest.p0.x;FX.t.y=gest.t0.y+p.y-gest.p0.y;gest.moved=true;schedule({});}
+  else if(gest.type==='pinch'&&ptrs.size===2){
+    // pinch uses screen-stable coords: recompute from fixed view
+    const [a,b]=[...ptrs.values()];const d=Math.hypot(b.x-a.x,b.y-a.y),ang=Math.atan2(b.y-a.y,b.x-a.x),m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    FX.t.s=gest.t0.s*d/gest.d0;FX.t.r=gest.t0.r+ang-gest.a0;FX.t.x=gest.t0.x+m.x-gest.m0.x;FX.t.y=gest.t0.y+m.y-gest.m0.y;schedule({comp:FX.adj.blur>0});
+  }
+});
+function endPtr(e){
+  if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);
+  if(ptrs.size===0&&gest){const g=gest;gest=null;
+    if(g.type==='paint')schedule({stats:true});else if(g.moved)schedule({stats:true});}
+  else if(ptrs.size===1&&gest&&gest.type==='pinch'){const p=[...ptrs.values()][0];gest={type:'drag',p0:p,t0:{...FX.t},moved:true};}
+}
+['pointerup','pointercancel'].forEach(ev=>fxCanvas.addEventListener(ev,endPtr));
+
+/* automatic quality matching: blur + grain from the target */
+function regionStats(c,maskC){
+  const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,m=maskC?maskC.getContext('2d').getImageData(0,0,w,h).data:d;
+  const gray=new Float32Array(w*h);for(let i=0;i<w*h;i++)gray[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  let s=0,q=0,n=0;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;
+    if(m[i*4+3]<250||m[(i-1)*4+3]<250||m[(i+1)*4+3]<250||m[(i-w)*4+3]<250||m[(i+w)*4+3]<250)continue;
+    const l=4*gray[i]-gray[i-1]-gray[i+1]-gray[i-w]-gray[i+w];s+=l;q+=l*l;n++;}
+  return n>200?Math.sqrt(Math.max(0,q/n-(s/n)**2)):null;
+}
+async function autoQuality(){
+  if(!FX.comp)return;fxStatus('يطابق الجودة…');await new Promise(r=>setTimeout(r,30));
+  const T=FX.tgt,L=FX.layer,M=layerMatrix();
+  const corners=[[0,0],[L.width,0],[0,L.height],[L.width,L.height]].map(([x,y])=>M.transformPoint(new DOMPoint(x,y)));
+  let x0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),y0=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y))));
+  let x1=Math.min(T.width,Math.ceil(Math.max(...corners.map(p=>p.x)))),y1=Math.min(T.height,Math.ceil(Math.max(...corners.map(p=>p.y))));
+  if(x1-x0<20||y1-y0<20){fxStatus('الوجه خارج الصورة');return;}
+  const w=x1-x0,h=y1-y0;
+  // target sharpness, measured only where the face mask covers it
+  const draw=(c,blur)=>{const g=c.getContext('2d');g.clearRect(0,0,w,h);g.setTransform(new DOMMatrix().translate(-x0,-y0).multiply(M));buildComp(blur,false);g.drawImage(FX.comp,0,0);g.setTransform(1,0,0,1,0,0);};
+  const faceC=cv(w,h);draw(faceC,0);
+  const tgC=cv(w,h),tg=tgC.getContext('2d');tg.drawImage(T,x0,y0,w,h,0,0,w,h);tg.globalCompositeOperation='destination-in';tg.drawImage(faceC,0,0);
+  const vt=regionStats(tgC,faceC);if(vt==null){buildComp();render();fxStatus('المنطقة صغيرة للمطابقة');return;}
+  const savedGrain=FX.adj.grain;FX.adj.grain=0;recolor();
+  let best={b:0,e:1e9,v:0};
+  for(const b of [0,.4,.8,1.2,1.6,2,2.5,3,4,5,6]){draw(faceC,b);const v=regionStats(faceC,faceC);if(v==null)continue;const e=Math.abs(Math.log((v+1)/(vt+1)));if(e<best.e)best={b,e,v};}
+  if(!FILTER_OK)best.b=0;
+  // add grain if the target is noisier than the face after blur
+  const grain=Math.max(0,Math.min(40,Math.round((vt-best.v)/4)));
+  FX.adj.blur=best.b;FX.adj.grain=grain||0;
+  $('#fxBlur').value=Math.round(best.b*10);$('#fxBlurO').textContent=best.b.toFixed(1);$('#fxGrain').value=FX.adj.grain;$('#fxGrainO').textContent=FX.adj.grain;
+  void savedGrain;recolor();buildComp();render();fxStatus('تمت مطابقة الجودة');
+}
+$('#fxAutoQ').onclick=autoQuality;
+
+/* export */
+$('#fxSave').onclick=()=>{
+  const T=FX.tgt,o=cv(T.width,T.height),g=o.getContext('2d');g.drawImage(T,0,0);
+  buildComp();g.setTransform(layerMatrix());g.drawImage(FX.comp,0,0);g.setTransform(1,0,0,1,0,0);
+  const url=o.toDataURL('image/jpeg',.95);$('#fx').hidden=true;
+  renderResult($('#faceOut'),{img:{dataUrl:url,b64:url.split(',')[1],mime:'image/jpeg',w:T.width,h:T.height},provider:'يدوي — على الهاتف'},imgs.faceDst.dataUrl);
+  const again=document.createElement('button');again.className='ghost';again.textContent='عدّل التركيب';again.onclick=openEditor;$('#faceOut .result .row').appendChild(again);
+};
 
 /* PWA */
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
