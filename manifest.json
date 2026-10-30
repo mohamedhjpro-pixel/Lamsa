@@ -1,0 +1,20 @@
+{
+  "name": "لمسة — محرر الصور الذكي",
+  "short_name": "لمسة",
+  "description": "تبديل الوجوه، تغيير الملابس، تحسين الجودة، توسعة الصور، ووكيل ذكي ينفّذ أوامرك بالعربية.",
+  "lang": "ar",
+  "dir": "rtl",
+  "id": "/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14111c",
+  "theme_color": "#14111c",
+  "categories": ["photo", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

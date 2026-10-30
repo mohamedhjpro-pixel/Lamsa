@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14111c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="لمسة">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>لمسة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Readex+Pro:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen phone app, header, scrollable view, fixed bottom tab bar */
+:root{
+  --bg:#14111c; --surface:#1f1a2b; --surface2:#2a2339; --line:#3a3150;
+  --fg:#f3eefb; --muted:#a79cbd; --accent:#ffb547; --accent-ink:#2a1a00; --danger:#ff7a7a; --ok:#7ee0a8;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  --r:16px; color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;display:flex;flex-direction:column;overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px}
+.brand span{color:var(--accent)}
+.icon-btn{background:var(--surface);border:1px solid var(--line);border-radius:12px;width:42px;height:42px;display:grid;place-items:center;cursor:pointer}
+.icon-btn svg{width:20px;height:20px;stroke:var(--fg);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+main{flex:1;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.view{display:flex;flex-direction:column;gap:14px;max-width:620px;margin:0 auto}
+h2{font-family:var(--f-display);font-size:20px;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:-8px 0 0;font-size:14px}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slot{position:relative;aspect-ratio:3/4;max-width:100%;border:1.5px dashed var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;display:grid;place-items:center;cursor:pointer;text-align:center;padding:8px}
+.slot.wide{aspect-ratio:4/3}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slot .ph{color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.slot .ph b{color:var(--fg);font-weight:600;font-size:14px}
+.slot .tag{position:absolute;top:8px;right:8px;background:rgba(20,17,28,.8);border-radius:8px;padding:2px 8px;font-size:12px;z-index:1}
+.slot.filled{border-style:solid;border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+label.lbl{font-size:13px;color:var(--muted);font-weight:500}
+textarea,input[type=text],input[type=password]{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;resize:vertical;min-height:48px}
+textarea:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.go{background:var(--accent);color:var(--accent-ink);border:0;border-radius:14px;padding:15px;font-family:var(--f-display);font-weight:700;font-size:17px;cursor:pointer;width:100%}
+.go:disabled{opacity:.45}
+.ghost{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:500}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.toggle{display:flex;align-items:center;gap:10px;font-size:14px}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.result{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.result img{width:100%;border-radius:12px;display:block}
+.note{font-size:13px;color:var(--muted)}
+.err{color:var(--danger);font-size:14px;white-space:pre-wrap}
+.prov{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);direction:ltr}
+/* compare slider */
+.compare{position:relative;border-radius:12px;overflow:hidden;direction:ltr;touch-action:none;user-select:none}
+.compare img{display:block;width:100%}
+.compare .before{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.compare .bar{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);pointer-events:none}
+.compare .bar::after{content:"";position:absolute;top:50%;left:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(0,0,0,.25)}
+.compare .lb{position:absolute;bottom:8px;font-size:12px;background:rgba(20,17,28,.8);padding:2px 8px;border-radius:8px}
+/* agent */
+.chat{display:flex;flex-direction:column;gap:12px;min-height:40vh}
+.msg{max-width:90%;padding:10px 12px;border-radius:14px;font-size:15px;white-space:pre-wrap}
+.msg.me{align-self:flex-start;background:var(--surface2)}
+.msg.bot{align-self:flex-end;background:var(--surface);border:1px solid var(--line)}
+.msg .thumbs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.msg .thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+.task{align-self:stretch;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
+.task .th{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:15px}
+.task .th .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.task.running .th .dot{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.task .plan{color:var(--muted);font-size:14px;white-space:pre-wrap}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.step{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;background:var(--surface2);border-radius:10px;padding:8px 10px;font-size:14px}
+.step .st{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px}
+.step.run .st{border-color:var(--accent);border-top-color:transparent;animation:sp 1s linear infinite}
+.step.done .st{background:var(--ok);border-color:var(--ok);color:#0b2a18}
+.step.fail .st{background:var(--danger);border-color:var(--danger);color:#2a0b0b}
+.step .meta{display:flex;flex-direction:column;min-width:0}
+.step .meta small{color:var(--muted);font-size:12px}
+.step img{width:40px;height:40px;object-fit:cover;border-radius:6px}
+.task .final img{width:100%;border-radius:12px;display:block}
+.composer{position:sticky;bottom:0;display:flex;flex-direction:column;gap:8px;background:var(--bg);padding-top:8px}
+.tray{display:flex;gap:10px;overflow-x:auto;padding:8px 2px 2px 8px}
+.tray .att{position:relative;flex:none}
+.tray .att img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
+.tray .att.cur img{border-color:var(--accent)}
+.tray .att span{position:absolute;bottom:2px;right:2px;font-size:10px;background:rgba(20,17,28,.85);padding:0 5px;border-radius:6px;direction:ltr}
+.tray .att button{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--danger);color:#2a0b0b;font-size:13px;line-height:1;cursor:pointer}
+.composer .bar{display:flex;gap:8px;align-items:flex-end}
+.composer textarea{min-height:48px;max-height:120px;resize:none}
+.composer .icon-btn{flex:none;width:48px;height:48px}
+.composer .send{background:var(--accent);border-color:var(--accent)}
+.composer .send svg{stroke:var(--accent-ink)}
+.composer .stop{background:var(--danger);border-color:var(--danger)}
+.mic.on{background:var(--danger);border-color:var(--danger)}
+/* tabs */
+nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-selected="true"]{color:var(--accent)}
+/* overlay + sheet */
+.overlay{position:fixed;inset:0;background:rgba(10,8,15,.75);display:grid;place-items:center;z-index:50;padding:24px;overflow-y:auto}
+.loader{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.spin{width:46px;height:46px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin,.step.run .st{animation-duration:3s}.task.running .th .dot{animation:none}}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;width:100%;max-width:460px;display:flex;flex-direction:column;gap:10px;margin:auto}
+.sheet h3{margin:0;font-family:var(--f-display)}
+.sheet h4{margin:8px 0 0;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.sheet a{color:var(--accent)}
+.sheet details summary{cursor:pointer;color:var(--muted);font-size:14px}
+.sheet details{display:flex;flex-direction:column;gap:8px}
+.sheet details[open]>*:not(summary){margin-top:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">لمسة<span>.</span></div>
+  <button class="icon-btn" id="openSettings" aria-label="الإعدادات">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main id="main">
+
+  <!-- AGENT -->
+  <section class="view" id="v-chat">
+    <h2>الوكيل</h2>
+    <p class="sub">أعطه هدفاً كاملاً، يخطّط ثم ينفّذ خطوة بخطوة عبر كل المزوّدين المتاحين. مثال: «حط وجه الصورة 1 على الصورة 2، لبّسو جلابة بيضاء، وسّعها لستوري وحسّن الجودة».</p>
+    <div class="chat" id="chatLog"></div>
+    <div class="composer">
+      <div class="tray" id="tray" hidden></div>
+      <div class="bar">
+        <button class="icon-btn" id="chatAttach" aria-label="إضافة صور"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>
+        <textarea id="chatInput" rows="1" placeholder="اكتب هدفك بالعربية أو الدارجة…"></textarea>
+        <button class="icon-btn mic" id="chatMic" aria-label="تحدث"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></button>
+        <button class="icon-btn send" id="chatSend" aria-label="إرسال"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l-7 7 7 7"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FACE SWAP -->
+  <section class="view" id="v-face" hidden>
+    <h2>تبديل الوجه</h2>
+    <p class="sub">الوجه من الصورة الأولى ينتقل إلى الشخص في الصورة الثانية.</p>
+    <div class="slots">
+      <div class="slot" data-slot="faceSrc"><span class="tag">١ الوجه</span><div class="ph"><b>صورة الوجه</b>اضغط للاختيار</div></div>
+      <div class="slot" data-slot="faceDst"><span class="tag">٢ الهدف</span><div class="ph"><b>الصورة الهدف</b>اضغط للاختيار</div></div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="faceHair"> انقل الشعر أيضاً</label>
+    <p class="note" style="margin:0">لون بشرة الوجه وجودة الصورة يُطابَقان تلقائياً مع جسم الشخص في الصورة الهدف.</p>
+    <button class="go" id="faceGo">تحويل</button>
+    <div id="faceOut"></div>
+  </section>
+
+  <!-- CLOTHES -->
+  <section class="view" id="v-clothes" hidden>
+    <h2>تغيير الملابس</h2>
+    <p class="sub">اختر صورتك، ثم إما صورة القطعة أو وصفها بالكلام (أو الاثنين).</p>
+    <div class="slots">
+      <div class="slot" data-slot="clPerson"><span class="tag">الشخص</span><div class="ph"><b>صورتك</b>اضغط للاختيار</div></div>
+      <div class="slot" data-slot="clGarment"><span class="tag">اختياري</span><div class="ph"><b>صورة الملابس</b>من متجر أو صورة أخرى</div></div>
+    </div>
+    <label class="lbl" for="clText">صف الملابس</label>
+    <div class="chips" id="clChips">
+      <button class="chip">جلابة مغربية بيضاء</button>
+      <button class="chip">بدلة رسمية كحلية مع ربطة عنق</button>
+      <button class="chip">جاكيت جلد أسود وجينز</button>
+      <button class="chip">قميص أبيض وسروال بيج</button>
+      <button class="chip">ملابس رياضية</button>
+      <button class="chip">هودي رمادي واسع</button>
+    </div>
+    <textarea id="clText" rows="2" placeholder="مثلاً: قميص كتان أزرق فاتح بأكمام قصيرة…"></textarea>
+    <button class="go" id="clGo">ألبِسني</button>
+    <div id="clOut"></div>
+  </section>
+
+  <!-- ENHANCE -->
+  <section class="view" id="v-enh" hidden>
+    <h2>تحسين الجودة</h2>
+    <p class="sub">توضيح الوجوه والتفاصيل على طريقة Remini. اسحب الشريط للمقارنة قبل/بعد.</p>
+    <div class="slot wide" data-slot="enh"><div class="ph"><b>اختر صورة</b>ضبابية، قديمة، أو بدقة ضعيفة</div></div>
+    <div class="chips" id="enhChips">
+      <button class="chip" aria-pressed="true" data-p="auto">تحسين تلقائي</button>
+      <button class="chip" data-p="face">توضيح الوجه</button>
+      <button class="chip" data-p="deblur">إزالة الضبابية</button>
+      <button class="chip" data-p="old">ترميم صورة قديمة</button>
+      <button class="chip" data-p="color">تلوين أبيض وأسود</button>
+      <button class="chip" data-p="hdr">ألوان وإضاءة HDR</button>
+      <button class="chip" data-p="night">صورة ليلية مظلمة</button>
+    </div>
+    <textarea id="enhText" rows="2" placeholder="ملاحظة إضافية (اختياري)…"></textarea>
+    <button class="go" id="enhGo">حسّن الصورة</button>
+    <div id="enhOut"></div>
+  </section>
+
+  <!-- EXPAND -->
+  <section class="view" id="v-exp" hidden>
+    <h2>توسعة الصورة</h2>
+    <p class="sub">كبّر الإطار وخلّي الذكاء الاصطناعي يكمّل الجسم أو المنظر.</p>
+    <div class="slot wide" data-slot="exp"><div class="ph"><b>اختر صورة</b>مقطوعة أو ضيقة</div></div>
+    <label class="lbl">المقاس الجديد</label>
+    <div class="chips" id="expRatio">
+      <button class="chip" aria-pressed="true" data-v="9:16">9:16 ستوري</button>
+      <button class="chip" data-v="4:5">4:5 بوست</button>
+      <button class="chip" data-v="1:1">1:1 مربع</button>
+      <button class="chip" data-v="3:4">3:4</button>
+      <button class="chip" data-v="16:9">16:9 عريض</button>
+    </div>
+    <label class="lbl">أين تتوسع؟</label>
+    <div class="chips" id="expAnchor">
+      <button class="chip" aria-pressed="true" data-v="center">كل الجهات</button>
+      <button class="chip" data-v="top">للأسفل (إكمال الجسم)</button>
+      <button class="chip" data-v="bottom">للأعلى</button>
+      <button class="chip" data-v="sides">للجانبين</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="expBig" checked> توسعة كبيرة (ضعف المساحة)</label>
+    <textarea id="expText" rows="2" placeholder="ماذا يُضاف؟ مثلاً: أكمل الساقين بسروال جينز وحذاء أبيض، والخلفية شارع في طنجة"></textarea>
+    <button class="go" id="expGo">وسّع الصورة</button>
+    <div id="expOut"></div>
+  </section>
+
+</main>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-v="chat"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><rect x="7" y="7" width="10" height="10" rx="3"/><path d="M10.5 11h.01M13.5 11h.01M10.5 14h3"/></svg>الوكيل</button>
+  <button role="tab" aria-selected="false" data-v="face"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></svg>الوجه</button>
+  <button role="tab" aria-selected="false" data-v="clothes"><svg viewBox="0 0 24 24"><path d="M8 3 3 6l2 4 2-1v12h10V9l2 1 2-4-5-3a4 4 0 0 1-8 0z"/></svg>الملابس</button>
+  <button role="tab" aria-selected="false" data-v="enh"><svg viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>تحسين</button>
+  <button role="tab" aria-selected="false" data-v="exp"><svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>توسعة</button>
+</nav>
+
+<input type="file" id="picker" accept="image/*" hidden>
+<input type="file" id="pickerMulti" accept="image/*" multiple hidden>
+
+<div class="overlay" id="loading" hidden><div class="loader"><div class="spin"></div><div id="loadMsg">جاري المعالجة…</div><div class="note" id="loadSub">قد يستغرق 10 إلى 40 ثانية</div></div></div>
+
+<div class="overlay" id="settings" hidden>
+  <div class="sheet">
+    <h3>المزوّدون</h3>
+    <p class="note">ضع مفتاح مزوّد واحد على الأقل. كلما أضفت أكثر، يوزّع الوكيل العمل بينها ويجرّب غيرها إن فشل واحد. المفاتيح تبقى على هاتفك فقط.</p>
+
+    <h4>Google Gemini <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">احصل على مفتاح</a></h4>
+    <input type="password" id="k_gemini" placeholder="AIza…" autocomplete="off" dir="ltr">
+    <h4>fal.ai <a href="https://fal.ai/dashboard/keys" target="_blank" rel="noopener">احصل على مفتاح</a></h4>
+    <input type="password" id="k_fal" placeholder="fal key" autocomplete="off" dir="ltr">
+    <h4>OpenAI <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">احصل على مفتاح</a></h4>
+    <input type="password" id="k_openai" placeholder="sk-…" autocomplete="off" dir="ltr">
+    <h4>OpenRouter <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">احصل على مفتاح</a></h4>
+    <input type="password" id="k_openrouter" placeholder="sk-or-…" autocomplete="off" dir="ltr">
+
+    <details>
+      <summary>أسماء النماذج (متقدم)</summary>
+      <label class="lbl">Gemini — الصور</label><input type="text" id="m_gemini_img" dir="ltr" list="gmImg">
+      <datalist id="gmImg"><option value="gemini-2.5-flash-image"><option value="gemini-3.1-flash-image-preview"><option value="gemini-3-pro-image-preview"></datalist>
+      <label class="lbl">Gemini — التخطيط</label><input type="text" id="m_gemini_txt" dir="ltr">
+      <label class="lbl">OpenAI — الصور</label><input type="text" id="m_openai_img" dir="ltr">
+      <label class="lbl">OpenAI — التخطيط</label><input type="text" id="m_openai_txt" dir="ltr">
+      <label class="lbl">OpenRouter — الصور</label><input type="text" id="m_or_img" dir="ltr">
+      <label class="lbl">OpenRouter — التخطيط</label><input type="text" id="m_or_txt" dir="ltr">
+      <label class="lbl">fal — تعديل عام</label><input type="text" id="m_fal_edit" dir="ltr">
+      <label class="lbl">fal — إنشاء من نص</label><input type="text" id="m_fal_gen" dir="ltr">
+      <label class="lbl">fal — تبديل الوجه</label><input type="text" id="m_fal_face" dir="ltr">
+      <label class="lbl">fal — ترميم الوجوه</label><input type="text" id="m_fal_restore" dir="ltr">
+      <p class="note">إذا ظهر خطأ «model not found» غيّر الاسم هنا.</p>
+    </details>
+    <div class="row"><button class="go" id="saveSettings" style="flex:1">حفظ</button><button class="ghost" id="closeSettings">إغلاق</button></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null||v===''?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const imgs={};
+
+/* ---------- settings ---------- */
+const MODELS={m_gemini_img:'gemini-2.5-flash-image',m_gemini_txt:'gemini-2.5-flash',m_openai_img:'gpt-image-1',m_openai_txt:'gpt-4.1-mini',
+  m_or_img:'google/gemini-2.5-flash-image',m_or_txt:'google/gemini-2.5-flash',m_fal_edit:'fal-ai/nano-banana/edit',m_fal_gen:'fal-ai/nano-banana',
+  m_fal_face:'fal-ai/face-swap',m_fal_restore:'fal-ai/codeformer'};
+const KEYS=['k_gemini','k_fal','k_openai','k_openrouter'];
+// migrate key from first version
+if(!store.get('k_gemini','')&&store.get('key',''))store.set('k_gemini',store.get('key',''));
+const key=k=>store.get(k,''), model=m=>store.get(m,MODELS[m]);
+function openSettings(){KEYS.forEach(k=>$('#'+k).value=key(k));Object.keys(MODELS).forEach(m=>$('#'+m).value=model(m));$('#settings').hidden=false;}
+$('#openSettings').onclick=openSettings;
+$('#closeSettings').onclick=()=>$('#settings').hidden=true;
+$('#saveSettings').onclick=()=>{KEYS.forEach(k=>store.set(k,$('#'+k).value.trim()));Object.keys(MODELS).forEach(m=>store.set(m,$('#'+m).value.trim()));$('#settings').hidden=true;};
+if(!KEYS.some(k=>key(k))) setTimeout(openSettings,300);
+
+/* ---------- tabs ---------- */
+$$('nav button').forEach(b=>b.onclick=()=>{
+  $$('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $$('.view').forEach(v=>v.hidden=v.id!=='v-'+b.dataset.v);
+  $('#main').scrollTop=0;
+});
+
+/* ---------- image helpers ---------- */
+function toImg(src,max=1600){
+  return new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{
+    let w=im.naturalWidth,h=im.naturalHeight;const s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);
+    const dataUrl=c.toDataURL('image/jpeg',0.93);res({dataUrl,b64:dataUrl.split(',')[1],mime:'image/jpeg',w,h});
+  };im.onerror=()=>rej(new Error('تعذّر قراءة الصورة'));im.src=src;});
+}
+function readImage(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>toImg(fr.result).then(res,rej);fr.onerror=rej;fr.readAsDataURL(file);});}
+async function urlToData(u){
+  if(u.startsWith('data:'))return u;
+  const r=await fetch(u);if(!r.ok)throw new Error('تعذّر تحميل النتيجة');const b=await r.blob();
+  return await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b);});
+}
+const normalize=async u=>toImg(await urlToData(u));
+const small=d=>toImg(d.dataUrl,640);
+let pickCb=null;
+$('#picker').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f&&pickCb)pickCb(await readImage(f));};
+function pick(cb){pickCb=cb;$('#picker').click();}
+function fillSlot(el,d){imgs[el.dataset.slot]=d;el.classList.add('filled');let im=el.querySelector('img');if(!im){im=document.createElement('img');im.alt='';el.appendChild(im);}im.src=d.dataUrl;el.querySelector('.ph').hidden=true;}
+$$('.slot').forEach(el=>el.onclick=()=>pick(d=>fillSlot(el,d)));
+
+/* ---------- chips ---------- */
+function singleChoice(sel){$$(sel+' .chip').forEach(c=>c.onclick=()=>$$(sel+' .chip').forEach(x=>x.setAttribute('aria-pressed',x===c)));}
+singleChoice('#enhChips');singleChoice('#expRatio');singleChoice('#expAnchor');
+const chosen=sel=>$(sel+' .chip[aria-pressed="true"]');
+$$('#clChips .chip').forEach(c=>c.onclick=()=>{$('#clText').value=c.textContent;});
+
+/* =====================================================
+   PROVIDERS — each returns a result image URL/dataURL
+   ===================================================== */
+async function jfetch(url,opt){
+  const r=await fetch(url,opt);let j={};try{j=await r.json();}catch(e){}
+  if(!r.ok){const m=(j.error&&(j.error.message||j.error))||j.detail||j.message||('HTTP '+r.status);throw new Error(typeof m==='string'?m:JSON.stringify(m));}
+  return j;
+}
+const P={
+  gemini:{name:'Gemini',k:'k_gemini',
+    async image({images=[],prompt,aspect}){
+      const parts=[];images.forEach((d,i)=>{parts.push({text:`Image ${i+1}:`},{inlineData:{mimeType:d.mime,data:d.b64}});});parts.push({text:prompt});
+      const gc={responseModalities:['TEXT','IMAGE']};if(aspect)gc.imageConfig={aspectRatio:aspect};
+      const call=g=>jfetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model('m_gemini_img'))}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key('k_gemini')},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:g})});
+      let j;try{j=await call(gc);}catch(e){if(aspect){delete gc.imageConfig;j=await call(gc);}else throw e;}
+      const c=(j.candidates||[])[0];let txt='';
+      for(const p of (c&&c.content&&c.content.parts)||[]){const d=p.inlineData||p.inline_data;if(d&&d.data)return `data:${d.mimeType||'image/png'};base64,${d.data}`;if(p.text)txt+=p.text;}
+      throw new Error('لم يُرجع صورة'+((c&&c.finishReason)?' ('+c.finishReason+')':'')+(txt?': '+txt.slice(0,200):''));
+    },
+    async text({system,parts}){
+      const ps=parts.map(p=>p.img?{inlineData:{mimeType:p.img.mime,data:p.img.b64}}:{text:p.text});
+      const j=await jfetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model('m_gemini_txt'))}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key('k_gemini')},
+        body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:ps}],generationConfig:{responseMimeType:'application/json'}})});
+      return ((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+    }},
+  fal:{name:'fal.ai',k:'k_fal',
+    async run(m,input){
+      const j=await jfetch('https://fal.run/'+m,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Key '+key('k_fal')},body:JSON.stringify(input)});
+      const u=(j.images&&j.images[0]&&j.images[0].url)||(j.image&&j.image.url)||(j.output&&j.output.url);
+      if(!u)throw new Error('لم يُرجع صورة');return u;
+    },
+    async image({images=[],prompt,aspect}){
+      if(!images.length)return this.run(model('m_fal_gen'),{prompt,num_images:1,...(aspect?{aspect_ratio:aspect}:{})});
+      return this.run(model('m_fal_edit'),{prompt,image_urls:images.map(d=>d.dataUrl),num_images:1,...(aspect?{aspect_ratio:aspect}:{})});
+    },
+    faceSwap(face,target){return this.run(model('m_fal_face'),{base_image_url:target.dataUrl,swap_image_url:face.dataUrl});},
+    restore(d){return this.run(model('m_fal_restore'),{image_url:d.dataUrl,fidelity:0.7,upscale_factor:2});}
+  },
+  openai:{name:'OpenAI',k:'k_openai',
+    size(a){if(!a)return 'auto';const[w,h]=a.split(':').map(Number);return w>h?'1536x1024':h>w?'1024x1536':'1024x1024';},
+    async image({images=[],prompt,aspect}){
+      const H={'Authorization':'Bearer '+key('k_openai')};let j;
+      if(!images.length){
+        j=await jfetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({model:model('m_openai_img'),prompt,size:this.size(aspect),n:1})});
+      }else{
+        const f=new FormData();f.append('model',model('m_openai_img'));f.append('prompt',prompt);f.append('size',this.size(aspect));f.append('input_fidelity','high');
+        for(const [i,d] of images.entries()){const b=await (await fetch(d.dataUrl)).blob();f.append('image[]',b,`img${i+1}.jpg`);}
+        try{j=await jfetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:H,body:f});}
+        catch(e){if(/input_fidelity/.test(e.message)){f.delete('input_fidelity');j=await jfetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:H,body:f});}else throw e;}
+      }
+      const d=j.data&&j.data[0];if(d&&d.b64_json)return 'data:image/png;base64,'+d.b64_json;if(d&&d.url)return d.url;throw new Error('لم يُرجع صورة');
+    },
+    async text({system,parts}){
+      const content=parts.map(p=>p.img?{type:'image_url',image_url:{url:p.img.dataUrl}}:{type:'text',text:p.text});
+      const j=await jfetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key('k_openai')},
+        body:JSON.stringify({model:model('m_openai_txt'),response_format:{type:'json_object'},messages:[{role:'system',content:system},{role:'user',content}]})});
+      return j.choices?.[0]?.message?.content||'';
+    }},
+  openrouter:{name:'OpenRouter',k:'k_openrouter',
+    async image({images=[],prompt,aspect}){
+      const content=[];images.forEach((d,i)=>content.push({type:'text',text:`Image ${i+1}:`},{type:'image_url',image_url:{url:d.dataUrl}}));
+      content.push({type:'text',text:prompt+(aspect?` Output aspect ratio ${aspect}.`:'')});
+      const j=await jfetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key('k_openrouter'),'X-Title':'Lamsa'},
+        body:JSON.stringify({model:model('m_or_img'),modalities:['image','text'],messages:[{role:'user',content}]})});
+      const m=j.choices?.[0]?.message;const u=m?.images?.[0]?.image_url?.url;if(u)return u;
+      throw new Error('لم يُرجع صورة'+(m?.content?': '+String(m.content).slice(0,200):''));
+    },
+    async text({system,parts}){
+      const content=parts.map(p=>p.img?{type:'image_url',image_url:{url:p.img.dataUrl}}:{type:'text',text:p.text});
+      const j=await jfetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key('k_openrouter'),'X-Title':'Lamsa'},
+        body:JSON.stringify({model:model('m_or_txt'),response_format:{type:'json_object'},messages:[{role:'system',content:system},{role:'user',content}]})});
+      return j.choices?.[0]?.message?.content||'';
+    }}
+};
+const has=p=>!!key(P[p].k);
+
+/* Router: tries each available provider in order, falls back on failure */
+async function route(attempts,onTry){
+  const avail=attempts.filter(a=>has(a.p));
+  if(!avail.length)throw new Error('لا يوجد مزوّد مفعّل لهذه المهمة. أضف مفتاحاً في الإعدادات.');
+  const errs=[];
+  for(const a of avail){
+    onTry&&onTry(P[a.p].name);
+    try{const u=await a.fn();return {img:await normalize(u),provider:P[a.p].name};}
+    catch(e){errs.push(P[a.p].name+': '+(e.message||e));}
+  }
+  throw new Error('فشلت كل المحاولات:\n'+errs.join('\n'));
+}
+const editors=(req,order=['gemini','openai','fal','openrouter'])=>order.map(p=>({p,fn:()=>P[p].image(req)}));
+
+/* =====================================================
+   TOOLS — shared by tabs and the agent
+   ===================================================== */
+const ENH={
+  auto:'Enhance this photo like a professional AI photo enhancer: increase resolution and sharpness, recover fine details in faces, eyes, hair, skin texture and fabric, remove noise, JPEG artifacts and blur, balance exposure and colors naturally.',
+  face:'Restore and sharpen the faces in this photo in high definition: crisp eyes and eyelashes, natural skin pores and texture, defined lips and hair strands. Keep identity exactly the same. Also lightly sharpen the rest of the image.',
+  deblur:'Remove motion blur and focus blur from this photo, making it tack sharp and high resolution while keeping it natural.',
+  old:'Restore this old photo: remove scratches, dust, tears, stains, fading and noise, fix contrast, sharpen faces and details, as a high-quality restored photograph. Keep it looking authentic, keep original colors (or black and white if it is black and white).',
+  color:'Colorize this black and white photo with realistic, natural, period-appropriate colors and natural skin tones, and enhance sharpness and detail.',
+  hdr:'Enhance colors and lighting with a natural HDR look: richer but realistic colors, recovered shadows and highlights, better contrast, sharp details.',
+  night:'This is a dark, low-light photo. Brighten it naturally, remove noise, recover details and correct colors, as if shot with a high-end camera, without looking fake.'
+};
+function padImage(d,ratio,anchor,big){
+  const [rw,rh]=ratio.split(':').map(Number);const R=rw/rh;let W=d.w,H=d.h;
+  if(W/H>R)H=W/R;else W=H*R;
+  if(big){W*=1.4;H*=1.4;}
+  if(W*H<d.w*d.h*1.25){W*=1.15;H*=1.15;}
+  const s=Math.min(1,1600/Math.max(W,H));const cw=Math.round(W*s),ch=Math.round(H*s),iw=Math.round(d.w*s),ih=Math.round(d.h*s);
+  let x=(cw-iw)/2,y=(ch-ih)/2;if(anchor==='top')y=0;if(anchor==='bottom')y=ch-ih;
+  const c=document.createElement('canvas');c.width=cw;c.height=ch;const g=c.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,cw,ch);
+  return new Promise(res=>{const im=new Image();im.onload=()=>{g.drawImage(im,Math.round(x),Math.round(y),iw,ih);const u=c.toDataURL('image/jpeg',0.93);res({dataUrl:u,b64:u.split(',')[1],mime:'image/jpeg',w:cw,h:ch});};im.src=d.dataUrl;});
+}
+const SKIN_QUALITY=`SKIN TONE: recolor the skin of the new face so it has exactly the same skin tone, undertone, saturation and brightness as the target person's own neck, ears, hands and body in the target photo; no color line at the jawline or neck, the face must not look lighter, darker, pinker or more yellow than the body.
+LIGHTING: same light direction, shadows, highlights and color temperature as the target photo.
+IMAGE QUALITY: match the target photo exactly in resolution, sharpness or blur, depth of field, noise/grain, compression and color grading; the face must not look sharper, smoother, cleaner or more retouched than the rest of the photo, and must not look blurrier either.`;
+const RATIOS=['9:16','4:5','1:1','3:4','16:9','4:3','2:3','3:2'];
+const T={
+  async face_swap({face,target,hair=false},on){
+    const prompt=`Face swap. Image 1 is the FACE SOURCE. Image 2 is the TARGET photo.
+Replace the face of the person in image 2 with the face from image 1, so the result clearly looks like the person from image 1 (same facial structure, eyes, nose, mouth, beard/facial hair, age features).
+Keep everything else from image 2 exactly: body, pose, head angle, clothes, background, camera framing and resolution.
+${hair?'Also transfer the hairstyle and hair color from image 1.':'Keep the hair from image 2.'}
+${SKIN_QUALITY}
+Photorealistic, no artifacts, no visible seams. Output only the final image.`;
+    const req={images:[face,target],prompt};
+    const list=hair?editors(req,['gemini','fal','openai','openrouter']):[{p:'fal',fn:()=>P.fal.faceSwap(face,target)},...editors(req,['gemini','openai','openrouter','fal'])];
+    const res=await route(list,on);
+    // fal's swap model only pastes the face: run an automatic harmonize pass for skin tone + image quality
+    if(res.provider===P.fal.name&&['gemini','openai','openrouter'].some(has)){
+      try{
+        const h=await route(editors({images:[res.img],prompt:`This photo had a face swapped in. Without changing the person's identity, facial features, expression, pose or anything else: ${SKIN_QUALITY} Output only the corrected image.`},['gemini','openai','openrouter']),n=>on&&on(n+' (مطابقة اللون والجودة)'));
+        return {img:h.img,provider:res.provider+' + '+h.provider};
+      }catch(e){}
+    }
+    return res;
+  },
+  async clothes({person,garment,description},on){
+    const images=[person];let prompt='Virtual try-on. Dress the person in image 1 in new clothing.';
+    if(garment){images.push(garment);prompt+=' Use the exact garment(s) shown in image 2: same design, color, fabric texture, pattern, logos and details. Ignore any person or mannequin in image 2.';}
+    if(description)prompt+=` Outfit description (may be Arabic, follow it precisely): "${description}".`;
+    prompt+=" Keep the person's face, identity, skin tone, hair, body shape, pose and the background unchanged. Make the clothes fit naturally to the body with realistic folds, shadows and lighting matching the photo. Photorealistic. Output only the final image.";
+    return route(editors({images,prompt},['gemini','fal','openai','openrouter']),on);
+  },
+  async enhance({image,preset='auto',extra},on){
+    let prompt=(ENH[preset]||ENH.auto)+' Do not change the composition, people, pose or identity. Output only the enhanced image.';
+    if(extra)prompt+=` Extra request (may be Arabic): "${extra}".`;
+    const gen=editors({images:[image],prompt},['gemini','openai','openrouter','fal']);
+    const restore=['auto','face','old','deblur'].includes(preset)&&!extra?[{p:'fal',fn:()=>P.fal.restore(image)}]:[];
+    return route([...restore,...gen],on);
+  },
+  async expand({image,ratio='9:16',anchor='center',big=true,extra},on){
+    if(!RATIOS.includes(ratio))ratio='9:16';
+    const padded=await padImage(image,ratio,anchor,big);
+    const where={center:'on all sides',top:'below the original photo (continue the body / scene downward)',bottom:'above the original photo',sides:'to the left and right'}[anchor]||'on all sides';
+    let prompt=`Outpainting. The photo is placed on a larger canvas; the plain white area ${where} is empty canvas to be filled. Seamlessly extend the scene into all the white area: continue the people's bodies, limbs and clothing naturally with correct anatomy and proportions, and continue the background, floor, sky, landscape or architecture with matching perspective, lighting, colors, grain and sharpness. Do not leave any white border. Do not alter the original part of the photo. Final aspect ratio ${ratio}.`;
+    if(extra)prompt+=` What to add in the new area (may be Arabic, follow it): "${extra}".`;
+    prompt+=' Output only the final image.';
+    return route(editors({images:[padded],prompt,aspect:ratio},['gemini','openai','fal','openrouter']),on);
+  },
+  async edit({image,images,instruction,ratio},on){
+    const list=images&&images.length?images:(image?[image]:[]);
+    const prompt=`You are an expert photo editor. ${list.length?'Apply this request to the image(s) above':'Create a photorealistic image for this request'}: ${instruction}. ${list.length?'Keep everything not mentioned unchanged (identity, composition, quality).':''} Output only the final image.`;
+    return route(editors({images:list,prompt,aspect:RATIOS.includes(ratio)?ratio:undefined}),on);
+  },
+  async generate({prompt,ratio},on){return T.edit({instruction:prompt,ratio},on);},
+  async combine({images,instruction,ratio},on){return T.edit({images,instruction,ratio},on);}
+};
+
+/* ---------- tab UI ---------- */
+async function run(msg,fn){
+  $('#loadMsg').textContent=msg;$('#loadSub').textContent='قد يستغرق 10 إلى 40 ثانية';$('#loading').hidden=false;
+  try{return await fn(n=>$('#loadSub').textContent='المزوّد: '+n);}finally{$('#loading').hidden=true;}
+}
+function download(dataUrl){const a=document.createElement('a');a.href=dataUrl;a.download='lamsa-'+Date.now()+'.jpg';document.body.appendChild(a);a.click();a.remove();}
+function compareEl(after,before){
+  const cmp=document.createElement('div');cmp.className='compare';
+  cmp.innerHTML=`<img alt="بعد" src="${after}"><img class="before" alt="قبل" src="${before}"><div class="bar"></div><span class="lb" style="left:8px">قبل</span><span class="lb" style="right:8px">بعد</span>`;
+  const set=x=>{const r=cmp.getBoundingClientRect();const p=Math.max(0,Math.min(1,(x-r.left)/r.width));cmp.querySelector('.before').style.clipPath=`inset(0 ${(1-p)*100}% 0 0)`;cmp.querySelector('.bar').style.left=(p*100)+'%';};
+  let drag=false;
+  cmp.addEventListener('pointerdown',e=>{drag=true;cmp.setPointerCapture(e.pointerId);set(e.clientX);});
+  cmp.addEventListener('pointermove',e=>{if(drag)set(e.clientX);});
+  cmp.addEventListener('pointerup',()=>drag=false);
+  const init=()=>{const r=cmp.getBoundingClientRect();if(r.width)set(r.left+r.width/2);};
+  cmp.querySelector('img').addEventListener('load',init);requestAnimationFrame(init);
+  return cmp;
+}
+function renderResult(box,res,before){
+  const after=res.img.dataUrl;box.innerHTML='';
+  const wrap=document.createElement('div');wrap.className='result';
+  if(before)wrap.appendChild(compareEl(after,before));else{const im=document.createElement('img');im.src=after;im.alt='النتيجة';wrap.appendChild(im);}
+  const row=document.createElement('div');row.className='row';
+  const b1=document.createElement('button');b1.className='go';b1.style.flex='1';b1.textContent='حفظ الصورة';b1.onclick=()=>download(after);
+  const b2=document.createElement('button');b2.className='ghost';b2.textContent='أرسلها للوكيل';b2.onclick=()=>{addAttachment(res.img);$('nav button[data-v="chat"]').click();};
+  row.append(b1,b2);wrap.appendChild(row);
+  const n=document.createElement('p');n.className='note';n.style.margin='0';n.innerHTML=`<span class="prov">${res.provider}</span> — على آيفون: اضغط مطولاً على الصورة ثم «حفظ في الصور».`;wrap.appendChild(n);
+  box.appendChild(wrap);box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderError(box,e){box.innerHTML='<p class="err"></p>';box.firstChild.textContent=e.message||String(e);}
+
+$('#faceGo').onclick=async()=>{const out=$('#faceOut');
+  if(!imgs.faceSrc||!imgs.faceDst)return renderError(out,new Error('اختر الصورتين أولاً.'));
+  try{renderResult(out,await run('جاري تبديل الوجه…',on=>T.face_swap({face:imgs.faceSrc,target:imgs.faceDst,hair:$('#faceHair').checked},on)));}catch(e){renderError(out,e);}};
+$('#clGo').onclick=async()=>{const out=$('#clOut');const desc=$('#clText').value.trim();
+  if(!imgs.clPerson)return renderError(out,new Error('اختر صورة الشخص أولاً.'));
+  if(!imgs.clGarment&&!desc)return renderError(out,new Error('اختر صورة الملابس أو اكتب وصفها.'));
+  try{renderResult(out,await run('جاري تغيير الملابس…',on=>T.clothes({person:imgs.clPerson,garment:imgs.clGarment,description:desc},on)));}catch(e){renderError(out,e);}};
+$('#enhGo').onclick=async()=>{const out=$('#enhOut');
+  if(!imgs.enh)return renderError(out,new Error('اختر صورة أولاً.'));
+  try{renderResult(out,await run('جاري التحسين…',on=>T.enhance({image:imgs.enh,preset:chosen('#enhChips').dataset.p,extra:$('#enhText').value.trim()},on)),imgs.enh.dataUrl);}catch(e){renderError(out,e);}};
+$('#expGo').onclick=async()=>{const out=$('#expOut');
+  if(!imgs.exp)return renderError(out,new Error('اختر صورة أولاً.'));
+  try{renderResult(out,await run('جاري توسعة الصورة…',on=>T.expand({image:imgs.exp,ratio:chosen('#expRatio').dataset.v,anchor:chosen('#expAnchor').dataset.v,big:$('#expBig').checked,extra:$('#expText').value.trim()},on)));}catch(e){renderError(out,e);}};
+
+/* =====================================================
+   AGENT (Manus-style): plan → execute steps → fallback → report
+   ===================================================== */
+const agent={attachments:[],current:null,history:[],running:false,stop:false};
+function renderTray(){
+  const t=$('#tray');t.innerHTML='';const items=[];
+  if(agent.current)items.push({d:agent.current,label:'current',cur:true});
+  agent.attachments.forEach((d,i)=>items.push({d,label:'img'+(i+1),i}));
+  t.hidden=!items.length;
+  items.forEach(it=>{const a=document.createElement('div');a.className='att'+(it.cur?' cur':'');
+    a.innerHTML=`<img alt=""><span></span><button aria-label="إزالة">×</button>`;a.querySelector('img').src=it.d.dataUrl;a.querySelector('span').textContent=it.cur?'الحالية':it.label;
+    a.querySelector('button').onclick=()=>{if(it.cur)agent.current=null;else agent.attachments.splice(it.i,1);renderTray();};t.appendChild(a);});
+}
+function addAttachment(d){agent.attachments.push(d);renderTray();}
+$('#chatAttach').onclick=()=>$('#pickerMulti').click();
+$('#pickerMulti').onchange=async e=>{for(const f of e.target.files)addAttachment(await readImage(f));e.target.value='';};
+
+function addMsg(who,text,thumbs){
+  const m=document.createElement('div');m.className='msg '+who;if(text)m.textContent=text;
+  if(thumbs&&thumbs.length){const t=document.createElement('div');t.className='thumbs';thumbs.forEach(d=>{const i=document.createElement('img');i.src=d.dataUrl;i.alt='';t.appendChild(i);});m.appendChild(t);}
+  $('#chatLog').appendChild(m);scrollEnd();return m;
+}
+const scrollEnd=()=>{const m=$('#main');m.scrollTop=m.scrollHeight;};
+
+const PLANNER=`You are "Lamsa", an autonomous photo-editing agent working like Manus: you receive a user goal (Arabic, Moroccan Darija, or any language), break it into concrete steps, and the app executes them with image tools across several AI providers.
+
+TOOLS (args):
+- face_swap {face, target, hair?:bool} : put the face from "face" onto the person in "target".
+- clothes {person, garment?, description?} : change outfit, from a garment image and/or a text description (English).
+- enhance {image, preset: auto|face|deblur|old|color|hdr|night, extra?} : Remini-style quality enhancement / restoration.
+- expand {image, ratio: 9:16|4:5|1:1|3:4|16:9, anchor: center|top|bottom|sides, extra?} : outpaint / extend canvas; anchor "top" means the photo stays at top and the new area is below (complete the body).
+- edit {image, instruction} : any other edit on one image (background, lighting, remove/add objects, style, pose, text, age...). Write instruction in detailed English.
+- combine {images:[...], instruction, ratio?} : compose several images into one.
+- generate {prompt, ratio?} : create a new image from text, detailed English prompt.
+
+IMAGE REFERENCES (use these strings as arg values): "img1","img2",... = images the user attached this turn, in order; "current" = the latest working image from earlier in the conversation; "step1","step2",... = output of that step; "last" = output of the previous step.
+
+RULES:
+- Use the fewest steps that fully achieve the goal (1–6). Order matters: identity edits (face_swap, clothes) first, then edits, expand, and enhance last if quality is requested.
+- If the user only asks a question or chats, return steps: [].
+- If an image is needed but none exists, ask for it in reply_ar with steps: [].
+- Never invent references that do not exist.
+
+Return ONLY JSON:
+{"reply_ar":"one or two short sentences in Arabic saying what you will do","steps":[{"title_ar":"short Arabic step title","tool":"...","args":{...}}],"done_ar":"short Arabic sentence to show when finished"}`;
+
+function parseJSON(s){try{return JSON.parse(s);}catch(e){const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return JSON.parse(s.slice(a,b+1));throw new Error('رد التخطيط غير صالح');}}
+async function plan(text){
+  const parts=[];
+  if(agent.history.length)parts.push({text:'Conversation so far:\n'+agent.history.slice(-8).map(h=>`${h.role}: ${h.text}`).join('\n')});
+  if(agent.current){parts.push({text:'"current" image:'},{img:await small(agent.current)});}
+  for(const [i,d] of agent.attachments.entries()){parts.push({text:`"img${i+1}":`},{img:await small(d)});}
+  parts.push({text:'User goal: '+text});
+  const errs=[];
+  for(const p of ['gemini','openrouter','openai']){
+    if(!has(p))continue;
+    try{return parseJSON(await P[p].text({system:PLANNER,parts}));}catch(e){errs.push(P[p].name+': '+e.message);}
+  }
+  // no planner available → single direct edit step
+  const hasImg=agent.attachments.length||agent.current;
+  return {reply_ar:'سأنفّذ طلبك مباشرة.',steps:[hasImg?{title_ar:'تنفيذ الطلب',tool:agent.attachments.length>1?'combine':'edit',args:agent.attachments.length>1?{images:agent.attachments.map((_,i)=>'img'+(i+1)),instruction:text}:{image:agent.attachments.length?'img1':'current',instruction:text}}:{title_ar:'إنشاء الصورة',tool:'generate',args:{prompt:text}}],done_ar:'تم.',_note:errs.join('\n')};
+}
+
+function resolveArgs(args,refs){
+  const r=v=>{if(typeof v!=='string')return v;const k=v.trim();if(k in refs){if(!refs[k])throw new Error('المرجع '+k+' غير متوفر');return refs[k];}return v;};
+  const IMGKEYS=['image','face','target','person','garment'];const out={};
+  for(const [k,v] of Object.entries(args||{})){
+    if(IMGKEYS.includes(k))out[k]=r(v);
+    else if(k==='images')out[k]=(Array.isArray(v)?v:[v]).map(r);
+    else out[k]=v;
+  }
+  for(const k of IMGKEYS)if(typeof out[k]==='string'&&/^(img\d+|step\d+|current|last)$/.test(out[k]))throw new Error('المرجع '+out[k]+' غير موجود');
+  return out;
+}
+function adaptArgs(tool,a){
+  // tolerate planner variations
+  if(tool==='clothes'&&!a.person&&a.image)a.person=a.image;
+  if(tool==='face_swap'&&!a.target&&a.image)a.target=a.image;
+  if(tool==='edit'&&!a.instruction)a.instruction=a.prompt||a.description||'';
+  if(tool==='generate'&&!a.prompt)a.prompt=a.instruction||'';
+  if(tool==='combine'&&!a.instruction)a.instruction=a.prompt||'';
+  if(a.extra==='')delete a.extra;
+  return a;
+}
+
+function taskCard(){
+  const c=document.createElement('div');c.className='task running';
+  c.innerHTML=`<div class="th"><span class="dot"></span><span class="tt">يخطّط…</span></div><div class="plan"></div><ol class="steps"></ol><div class="final"></div>`;
+  $('#chatLog').appendChild(c);scrollEnd();return c;
+}
+function stepRow(card,s,i){
+  const li=document.createElement('li');li.className='step';
+  li.innerHTML=`<span class="st"></span><div class="meta"><span></span><small>في الانتظار</small></div><span class="th"></span>`;
+  li.querySelector('.meta span').textContent=`${i+1}. ${s.title_ar||s.tool}`;card.querySelector('.steps').appendChild(li);return li;
+}
+function setBusy(b){agent.running=b;const s=$('#chatSend');s.classList.toggle('stop',b);s.setAttribute('aria-label',b?'إيقاف':'إرسال');
+  s.innerHTML=b?'<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l-7 7 7 7"/></svg>';}
+
+async function sendAgent(){
+  if(agent.running){agent.stop=true;return;}
+  const text=$('#chatInput').value.trim();if(!text)return;
+  if(!KEYS.some(k=>key(k))){openSettings();return;}
+  $('#chatInput').value='';
+  const turnAtt=agent.attachments.slice();
+  addMsg('me',text,turnAtt);agent.history.push({role:'user',text});
+  setBusy(true);agent.stop=false;
+  const card=taskCard();const tt=card.querySelector('.tt');
+  try{
+    const p=await plan(text);
+    agent.attachments=[];renderTray();
+    card.querySelector('.plan').textContent=p.reply_ar||'';
+    const steps=Array.isArray(p.steps)?p.steps:[];
+    agent.history.push({role:'agent',text:(p.reply_ar||'')+(steps.length?' [steps: '+steps.map(s=>s.tool).join(', ')+']':'')});
+    if(!steps.length){tt.textContent='رد';card.classList.remove('running');card.querySelector('.steps').remove();return;}
+    tt.textContent='ينفّذ الخطة';
+    const refs={current:agent.current,last:agent.current};turnAtt.forEach((d,i)=>refs['img'+(i+1)]=d);
+    const rows=steps.map((s,i)=>stepRow(card,s,i));
+    let lastRes=null;
+    for(const [i,s] of steps.entries()){
+      if(agent.stop){rows.slice(i).forEach(r=>r.querySelector('small').textContent='أُلغيت');break;}
+      const row=rows[i],small_=row.querySelector('small');row.classList.add('run');scrollEnd();
+      const fn=T[s.tool];
+      try{
+        if(!fn)throw new Error('أداة غير معروفة: '+s.tool);
+        const args=adaptArgs(s.tool,resolveArgs(s.args,refs));
+        let res;
+        try{res=await fn(args,n=>small_.textContent='يعمل عبر '+n+'…');}
+        catch(e){ // self-correction: retry once as a generic edit
+          if(s.tool==='edit'||s.tool==='generate')throw e;
+          small_.textContent='يعيد المحاولة بطريقة أخرى…';
+          const base=args.image||args.target||args.person||(args.images&&args.images[0]);
+          const ims=[args.face,args.target,args.person,args.garment,args.image,...(args.images||[])].filter(Boolean);
+          res=await T.edit({images:ims.length?ims:(base?[base]:[]),instruction:`${s.title_ar}. ${args.instruction||args.description||args.extra||''}`},n=>small_.textContent='إعادة عبر '+n+'…');
+        }
+        refs['step'+(i+1)]=res.img;refs.last=res.img;lastRes=res;
+        row.classList.remove('run');row.classList.add('done');row.querySelector('.st').textContent='✓';
+        small_.innerHTML=`<span class="prov">${res.provider}</span>`;
+        const th=document.createElement('img');th.src=res.img.dataUrl;th.alt='';row.querySelector('.th').appendChild(th);
+      }catch(e){
+        row.classList.remove('run');row.classList.add('fail');row.querySelector('.st').textContent='!';small_.textContent=(e.message||String(e)).slice(0,300);
+        rows.slice(i+1).forEach(r=>r.querySelector('small').textContent='توقفت بسبب الخطوة السابقة');
+        break;
+      }
+    }
+    if(lastRes){
+      agent.current=lastRes.img;renderTray();
+      const f=card.querySelector('.final');
+      const firstIn=turnAtt[0]||null;
+      if(firstIn&&steps.length&&steps.every(s=>s.tool==='enhance'))f.appendChild(compareEl(lastRes.img.dataUrl,firstIn.dataUrl));
+      else{const im=document.createElement('img');im.src=lastRes.img.dataUrl;im.alt='النتيجة';f.appendChild(im);}
+      const row=document.createElement('div');row.className='row';row.style.marginTop='8px';
+      const b=document.createElement('button');b.className='go';b.style.flex='1';b.textContent='حفظ';b.onclick=()=>download(lastRes.img.dataUrl);row.appendChild(b);f.appendChild(row);
+      tt.textContent=agent.stop?'أُوقف':(p.done_ar||'انتهى');
+      agent.history.push({role:'agent',text:'Finished. "current" is now the final image.'});
+    }else tt.textContent=agent.stop?'أُوقف':'لم يكتمل';
+  }catch(e){tt.textContent='خطأ';const er=document.createElement('p');er.className='err';er.style.margin='0';er.textContent=e.message||String(e);card.appendChild(er);}
+  finally{card.classList.remove('running');setBusy(false);scrollEnd();}
+}
+$('#chatSend').onclick=sendAgent;
+$('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAgent();}});
+
+/* voice */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){$('#chatMic').hidden=true;}else{
+  let rec=null;
+  $('#chatMic').onclick=()=>{
+    if(rec){rec.stop();return;}
+    rec=new SR();rec.lang='ar-MA';rec.interimResults=true;rec.continuous=false;const base=$('#chatInput').value;
+    rec.onresult=e=>{let s='';for(const r of e.results)s+=r[0].transcript;$('#chatInput').value=(base?base+' ':'')+s;};
+    rec.onend=()=>{rec=null;$('#chatMic').classList.remove('on');};rec.onerror=()=>{};
+    $('#chatMic').classList.add('on');rec.start();
+  };
+}
+addMsg('bot','مرحباً! أرفق صورة أو أكثر (تُسمّى img1، img2…)، ثم اكتب أو قل هدفك كاملاً. أضع خطة وأنفّذها خطوة بخطوة، وإذا فشل مزوّد أجرّب غيره.');
+
+/* PWA */
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
